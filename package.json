@@ -1,0 +1,21 @@
+{
+  "name": "photochuck-drone",
+  "version": "0.0.1",
+  "description": "Control your ar drone with a wii nunchuck and take pictures",
+  "main": "main.js",
+  "scripts": {
+    "test": "n/a"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahayes/photochuck-drone"
+  },
+  "keywords": [
+    "drone"
+  ],
+  "author": "Anonymous",
+  "license": "BSD",
+  "dependencies": {
+    "serialport": "~1.2.3"
+  }
+}
