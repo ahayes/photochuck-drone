@@ -1,3 +1,5 @@
+var log = true;
+
 var library = require("serialport");
 
 var serialPort = new library.SerialPort("/dev/tty.usbmodem1421", {
@@ -7,6 +9,8 @@ var serialPort = new library.SerialPort("/dev/tty.usbmodem1421", {
 
 var arDrone = require('ar-drone');
 var client  = arDrone.createClient();
+
+var autonomy = require('ardrone-autonomy');
 
 var stdin = process.stdin;
 
@@ -27,27 +31,34 @@ serialPort.on("open", function () {
   console.log('open');
   serialPort.on('data', function(raw_data) {
     var data = raw_data.split(" ");
-    var analogX = data[0];
-    var analogY = data[1];
-    var accelX = data[2];
-    var accelY = data[3];
     var accelZ = data[4];
     var zButton = data[5];
     var cButton = strip(data[6]);
 
+    var xAmmount = mungeAnalog(data[0]);
+    var yAmmount = mungeAnalog(data[1]);
+    var strafe = mungeAccel(data[2]);
+    var height = mungeAccel(data[3]);
+
+    if(cButton === "1") {
+      var now = new Date().getTime();
+      if(now > (last_button_time + 2000)){
+        //take a picture
+        console.log("smile!");
+      }
+      last_button_time = now;
+    }
+
     if(zButton === "1") {
-      var height = mungeAccel(accelY);
-      var strafe = mungeAccel(accelX);
-      if (height === 0 && strafe === 0) {
+      if (xAmmount === 0 && yAmmount === 0 && height === 0 && strafe === 0) {
         stop();
       } else {
         flyUp(height);
         moveRight(strafe);
+        moveFront(yAmmount);
+        yawRight(xAmmount);
       }
     } else {
-      var xAmmount = mungeAnalog(analogX);
-      var yAmmount = mungeAnalog(analogY);
-
       if (xAmmount === 0 && yAmmount === 0) {
         stop();
       } else {
@@ -72,18 +83,41 @@ var mungeAnalog = function(analog){
   return temp;
 };
 
-//FIXME
 var mungeAccel = function(accel){
-  if(accel > 400 && accel < 600) {
+  //from 300 to 700
+  if(accel > 420 && accel < 580) {
     return 0;
+  } else if (accel <= 420) {
+    //from 300 to 420 (highest to lowest)
+    temp = accel / 10;
+    //from 30 to 42
+    temp = temp - 30;
+    //from 0 to 12
+    temp = temp / 1.2;
+    //from 0 to 10
+    temp = Math.round(temp);
+    //from 0 to 1
+    temp = temp / 10;
+    //invert
+    temp = - (1 - temp);
+    return -temp;
+  } else {
+    //from 580 to 700 (highest to lowest)
+    temp = accel / 10;
+    //from 58 to 70
+    temp = temp - 58;
+    //from 0 to 12
+    temp = temp / 1.2;
+    //from 0 to 10
+    temp = Math.round(temp);
+    //from 0 to 1
+    temp = temp / 10;
+    return -temp;
   }
-  var temp = accel / 20;
-  temp = temp - 25;
-  temp = truncate(temp);
-  temp = temp / 10;
-  offset = (temp < 0) ? 0.5 : -0.5;
-  temp = temp + offset;
-  return -temp;
+};
+
+var truncate2 = function(n){
+  return parseInt(("" + n).substring(0,3), 10);
 };
 
 var truncate = function(n){
@@ -130,43 +164,44 @@ var vertRate = 0.1;
 
 function yawRight(val){
   client.clockwise(val);
-  console.log("moving CCW: " + val);
+  if(log) { console.log("moving CCW: " + val); }
   return "Rot CCW";
 }
 
 function moveFront(val){
   client.front(val);
-  console.log("moving front: " + val);
+  if(log) { console.log("moving front: " + val); }
   return "Move Forward";
 }
 
 function moveRight(val){
   client.left(val);
-  console.log("moving right: " + val);
+  if(log) { console.log("moving right: " + val); }
   return "Move Left";
 }
 
 function flyUp(val){
-  console.log("Fly up: " + val);
+  if(log) { console.log("Fly up: " + val); }
   client.up(val);
   return "Fly Up";
 }
 
 function droneOn(){
-  console.log("Launch drone");
+  if(log) { console.log("Launch drone"); }
   client.takeoff();
+  client.stop();
   return "Launch drone";
 }
 
 function droneOff(){
-  console.log("Land drone");
+  if(log) { console.log("Land drone"); }
   client.land();
   return "Land the drone";
 }
 
 function stop(){
   client.stop();
-  console.log("stopping...");
+  //console.log("stopping...");
   return "Stop the drone";
 }
 
