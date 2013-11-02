@@ -1,7 +1,6 @@
 var library = require("serialport");
 
-
-var serialPort = new library.SerialPort("/dev/tty.usbmodem1421", {
+var serialPort = new library.SerialPort("/dev/tty.usbmodem1411", {
   baudrate: 19200,
   parser: library.parsers.readline("\n")
 });
@@ -17,11 +16,13 @@ serialPort.on("open", function () {
     var accelZ = data[4];
     var zButton = data[5];
     var cButton = data[6];
+    console.log(zButton);
+    console.log("" + typeof zButton);
 
     //var x = mungeAnalog(analogX);
     //var y = mungeAnalog(analogY);
     //console.log("x: " + x + " y: " + y);
-    console.log(mungeAccel(accelX));
+    //console.log(mungeAccel(accelY));
   });
 });
 

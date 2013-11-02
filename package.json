@@ -16,6 +16,7 @@
   "author": "Anonymous",
   "license": "BSD",
   "dependencies": {
-    "serialport": "~1.2.3"
+    "serialport": "~1.2.3",
+    "ar-drone": "~0.3.0"
   }
 }
