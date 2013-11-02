@@ -2,7 +2,7 @@ var library = require("serialport");
 
 
 
-var serialPort = new library.SerialPort("/dev/tty.usbmodem1421", {
+var serialPort = new library.SerialPort("/dev/tty.usbmodem1411", {
   baudrate: 19200,
   parser: library.parsers.readline("\n")
 });
@@ -30,6 +30,8 @@ stdin.resume();
 stdin.setEncoding( 'utf8' );
 
 var movable = true;
+var last_button_time = new Date().getTime();
+var last_button = false;
 
 serialPort.on("open", function () {
   console.log('open');
@@ -43,9 +45,14 @@ serialPort.on("open", function () {
     var zButton = data[5];
     var cButton = data[6];
 
+    var current_time = new Date().getTime();
     if(zButton === "1")
     {
-      movable = !movable;
+      if (current_time > (last_button_time + 200))
+      {
+        movable = !movable;
+      }
+      last_button_time = current_time;
     }
 
 
@@ -53,7 +60,7 @@ serialPort.on("open", function () {
     var yAmmount = mungeAnalog(analogY);
 
 
-    if (!movable)
+    if (!movable || (xAmmount === 0 && yAmmount === 0))
     {
         stop();
     }
@@ -67,7 +74,7 @@ serialPort.on("open", function () {
     //var x = mungeAnalog(analogX);
     //var y = mungeAnalog(analogY);
     //console.log("x: " + x + " y: " + y);
-    console.log(mungeAccel(accelX));
+    //console.log(mungeAccel(accelX));
   });
 });
 
@@ -91,73 +98,66 @@ var truncate = function(n){
   return Math[n > 0 ? "floor" : "ceil"](n);
 };
 
-
-
-
-
-
-
-
-
 // on any data into stdin
 stdin.on( 'data', function( key ){
   // ctrl-c ( end of text )
   if ( key === '\u0003' ) {
+    console.log("stopping");
     droneOff();
     process.exit();
   }
 
   var output = '-';
   // write the key to stdout all normal like
-  
+
   switch(key)
   {
     case 'w':
       output = moveFront();
       break;
-    
+
     case 'x':
       output = moveBack();
       break;
-      
+
     case 'a':
       output = moveLeft();
       break;
-      
+
     case 'd':
       output = moveRight();
       break;
-      
+
 
   case 'i':
       output = flyUp();
       break;
-    
+
     case 'k':
       output = flyDown();
       break;
-      
+
     case 'j':
       output = yawLeft();
       break;
-      
+
     case 'l':
       output = yawRight();
       break;
-      
+
 
   case '0':
       output = droneOn();
       break;
-      
+
     case '9':
       output = droneOff();
       break;
-        
+
   case 's':
       output = stop();
       break;
-      
+
 
 
 
@@ -173,7 +173,7 @@ stdin.on( 'data', function( key ){
   {
     process.stdout.write( "Pressed: " + output + '\n');
   }
-  
+
 
 });
 
@@ -190,9 +190,9 @@ var vertRate = 0.1;
 
 function yawLeft(val){ client.counterClockwise(rotRate); return "Rot CW"; }
 
-function yawRight(val){ client.clockwise(rotRate); return "Rot CCW"; }
+function yawRight(val){ client.clockwise(val); console.log("moving CCW: " + val); return "Rot CCW"; }
 
-function moveFront(val){ client.front(horzRate); return "Move Forward"; }
+function moveFront(val){ client.front(val); console.log("moving front: " + val); return "Move Forward"; }
 
 function moveBack(val){ client.back(horzRate); return "Move Backward"; }
 
@@ -210,16 +210,9 @@ function droneOn(){ client.takeoff(); return "Launch drone"; }
 function droneOff(){ client.land(); return "Land the drone"; }
 
 
-function stop(){ client.stop(); return "Stop the drone"; }
+function stop(){ client.stop(); console.log("stopping..."); return "Stop the drone"; }
 
 
 
-
-
-
-
-
-
-
-
-
+/////////////////////////////////////////////////////////////////////
+//PICTURES
