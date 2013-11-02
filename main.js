@@ -23,10 +23,6 @@ stdin.setEncoding( 'utf8' );
 var movement = false;
 var last_button_time = new Date().getTime();
 
-    function strip(str) {
-      if(str === undefined) { return str; }
-      return str.replace(/\r/g, '');
-    }
 serialPort.on("open", function () {
   console.log('open');
   serialPort.on('data', function(raw_data) {
@@ -39,19 +35,18 @@ serialPort.on("open", function () {
     var zButton = data[5];
     var cButton = strip(data[6]);
 
-    var current_time = new Date().getTime();
     if(zButton === "1") {
-      if (current_time > (last_button_time + 200)) {
-        movement = !movement;
+      var height = mungeAccel(accelY);
+      var strafe = mungeAccel(accelX);
+      if (height === 0 && strafe === 0) {
+        stop();
+      } else {
+        flyUp(height);
+        moveRight(strafe);
       }
-      last_button_time = current_time;
-    }
-    if(!movement){
-      stop();
     } else {
       var xAmmount = mungeAnalog(analogX);
       var yAmmount = mungeAnalog(analogY);
-      console.log(xAmmount);
 
       if (xAmmount === 0 && yAmmount === 0) {
         stop();
@@ -59,17 +54,15 @@ serialPort.on("open", function () {
         moveFront(yAmmount);
         yawRight(xAmmount);
       }
-
-      var height = mungeAccel(accelY);
-      if (height === 0) {
-        stop();
-      } else {
-        flyUp(height);
-      }
     }
 
   });
 });
+
+var strip = function(str) {
+  if(str === undefined) { return str; }
+  return str.replace(/\r/g, '');
+};
 
 var mungeAnalog = function(analog){
   var temp = analog / 10;
@@ -90,7 +83,7 @@ var mungeAccel = function(accel){
   temp = temp / 10;
   offset = (temp < 0) ? 0.5 : -0.5;
   temp = temp + offset;
-  return temp;
+  return -temp;
 };
 
 var truncate = function(n){
@@ -154,6 +147,7 @@ function moveRight(val){
 }
 
 function flyUp(val){
+  console.log("Fly up: " + val);
   client.up(val);
   return "Fly Up";
 }
