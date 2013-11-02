@@ -1,4 +1,5 @@
 var log = true;
+var fs = require('fs');
 
 var library = require("serialport");
 
@@ -26,6 +27,18 @@ stdin.setEncoding( 'utf8' );
 
 var movement = false;
 var last_button_time = new Date().getTime();
+var write_picture = false;
+
+arDrone.createClient().getPngStream()
+  .on('error', console.log)
+  .on('data', function(pngBuffer) {
+    if(write_picture){
+      write_picture = false;
+      fs.writeFile('message.png', pngBuffer, function (err) {
+        if (err) throw err;
+      });
+    }
+  });
 
 serialPort.on("open", function () {
   console.log('open');
@@ -45,6 +58,7 @@ serialPort.on("open", function () {
       if(now > (last_button_time + 2000)){
         //take a picture
         console.log("smile!");
+        write_picture = true;
       }
       last_button_time = now;
     }
