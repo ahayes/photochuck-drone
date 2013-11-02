@@ -29,7 +29,8 @@ var movement = false;
 var last_button_time = new Date().getTime();
 var write_picture = false;
 
-arDrone.createClient().getPngStream()
+client.config('video:video_channel', 0);
+client.getPngStream()
   .on('error', console.log)
   .on('data', function(pngBuffer) {
     if(write_picture){
